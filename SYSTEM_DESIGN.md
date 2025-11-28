@@ -139,8 +139,9 @@ extra_life: Immediately adds 1 life (no duration tracking)
   'turkey': {width, height, color, speed, health, points, movement: 'straight'},
   'pumpkin_pie': {..., movement: 'zigzag'},
   'cranberry': {..., movement: 'straight'},
-  'stuffing': {..., movement: 'straight'},
-  'mashed_potato': {..., health: 2, movement: 'straight'},
+  'stuffing': {..., health: 2, movement: 'straight'},
+  'mashed_potato': {..., movement: 'straight'},
+  'green_bean_casserole': {..., health: 3, movement: 'track_player'},
   'gravy_boat': {..., health: 5, movement: 'sine_wave'}  # Boss
 }
 ```
@@ -151,6 +152,7 @@ extra_life: Immediately adds 1 life (no duration tracking)
 - Health: `health` / `max_health` - decremented by `take_damage(damage=1)`
 - Movement state: `initial_x`, `time_offset`, `zigzag_direction` (movement-specific)
 - Speed: `base_speed * speed_multiplier` (from difficulty + level)
+- Player reference: `self.player` (optional, required for track_player movement)
 
 **Movement Algorithms**:
 ```python
@@ -169,6 +171,18 @@ amplitude = 100
 frequency = 0.05
 x = initial_x + amplitude * sin(frequency * y + time_offset)
 x = clamp(x, 0, SCREEN_WIDTH - width)
+
+# Track Player (green_bean_casserole)
+if player:
+    dx = (player.x + player.width/2) - (self.x + self.width/2)
+    dy = (player.y + player.height/2) - (self.y + self.height/2)
+    distance = sqrt(dx**2 + dy**2)
+    if distance > 0:
+        x += (dx / distance) * speed  # Normalized direction
+        y += (dy / distance) * speed
+    x = clamp(x, 0, SCREEN_WIDTH - width)
+else:
+    y += speed  # Fallback to straight if no player reference
 ```
 
 **Rendering**:
@@ -199,9 +213,10 @@ except (pygame.error, FileNotFoundError):
 
 **Rectangle Fallback** (no sprite):
 - mashed_potato (40x40)
+- green_bean_casserole (45x45)
 - gravy_boat (60x50 - boss)
 
-**Factory**: `spawn_enemy(enemy_type, speed_multiplier)` → returns Enemy with random x position.
+**Factory**: `spawn_enemy(enemy_type, speed_multiplier, player=None)` → returns Enemy with random x position. Player reference required for track_player movement type.
 
 ### 5. Collision System (collision.py)
 
@@ -293,6 +308,7 @@ is_boss_level = (current_level % 5 == 0)
   2: ['pumpkin_pie'],
   4: ['stuffing'],
   6: ['mashed_potato'],
+  8: ['green_bean_casserole'],
   5: ['gravy_boat']  # Only spawns on boss levels
 }
 ```
@@ -303,12 +319,12 @@ can_spawn_enemy(current_time):
     return (enemies_spawned < enemies_in_level) and
            (current_time - last_spawn_time >= spawn_rate)
 
-spawn_next_enemy(current_time):
+spawn_next_enemy(current_time, player=None):
     if is_boss_level() and enemies_spawned == 0:
-        return spawn_enemy('gravy_boat', speed_multiplier)
+        return spawn_enemy('gravy_boat', speed_multiplier, player)
     else:
         available = get_available_enemy_types()  # Based on current_level and unlocks
-        return spawn_enemy(random.choice(available), speed_multiplier)
+        return spawn_enemy(random.choice(available), speed_multiplier, player)
 ```
 
 **Level Completion**:
@@ -839,6 +855,7 @@ self.clock.tick(10)  # 10 FPS instead of 60
 10. **Powerup collision uses bounding box**: Circular powerups use rectangular Rect for collision (slightly larger hit area).
 11. **Message flooding**: Rapidly killing many enemies can fill message queue (only 5 visible, older messages pushed out).
 12. **Message timing**: All messages use game time, so pausing (if implemented) would freeze expiration.
+13. **Player-tracking enemies**: Green bean casserole enemies require player reference passed through spawn chain (Game → LevelManager → spawn_enemy). Without player reference, they fall back to straight movement.
 
 ---
 

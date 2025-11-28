@@ -251,7 +251,7 @@ class Game:
             self.message_queue.add_message(powerup_name, GREEN, current_time)
 
         # Spawn enemies (apply slow modifier to speed)
-        enemy = self.level_manager.spawn_next_enemy(current_time)
+        enemy = self.level_manager.spawn_next_enemy(current_time, self.player)
         if enemy:
             # Apply slow enemies modifier if active
             enemy.speed *= self.enemy_speed_modifier

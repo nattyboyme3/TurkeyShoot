@@ -40,7 +40,7 @@ SPRITE_DIR = 'assets/sprites'
 
 # Enemy types configuration
 ENEMY_TYPES = {
-    'turkey': {
+    'gravy_boat': {
         'width': 45,
         'height': 45,
         'color': BROWN,
@@ -67,7 +67,7 @@ ENEMY_TYPES = {
         'points': 50,
         'movement': 'straight'
     },
-    'stuffing': {
+    'mashed_potato': {
         'width': 35,
         'height': 35,
         'color': (210, 180, 140),
@@ -76,7 +76,7 @@ ENEMY_TYPES = {
         'points': 75,
         'movement': 'straight'
     },
-    'mashed_potato': {
+    'stuffing': {
         'width': 40,
         'height': 40,
         'color': (245, 245, 220),
@@ -85,7 +85,16 @@ ENEMY_TYPES = {
         'points': 200,
         'movement': 'straight'
     },
-    'gravy_boat': {
+    'green_bean_casserole': {
+        'width': 45,
+        'height': 45,
+        'color': (100, 150, 50),
+        'speed': 1.5,
+        'health': 3,
+        'points': 300,
+        'movement': 'track_player'
+    },
+    'turkey': {
         'width': 60,
         'height': 50,
         'color': (101, 67, 33),
@@ -102,25 +111,25 @@ DIFFICULTY_SETTINGS = {
         'lives': 5,
         'speed_multiplier': 1.0,
         'enemy_count_multiplier': 0.8,
-        'spawn_rate': 2000  # milliseconds
+        'spawn_rate': 1250  # milliseconds
     },
     'medium': {
         'lives': 3,
         'speed_multiplier': 1.5,
         'enemy_count_multiplier': 1.0,
-        'spawn_rate': 1500
+        'spawn_rate': 1000 # milliseconds
     },
     'hard': {
         'lives': 2,
         'speed_multiplier': 2.0,
         'enemy_count_multiplier': 1.3,
-        'spawn_rate': 1000
+        'spawn_rate': 750 # milliseconds
     }
 }
 
 # Level progression
-LEVEL_ENEMY_INCREASE = 0.2  # 20% more enemies per level
-LEVEL_SPEED_INCREASE = 0.1  # 10% speed increase every 3 levels
+LEVEL_ENEMY_INCREASE = 0.35  # 35% more enemies per level
+LEVEL_SPEED_INCREASE = 0.2  # 10% speed increase every 3 levels
 BOSS_LEVEL_INTERVAL = 5  # Boss level every 5 levels
 
 # Enemy unlocks by level
@@ -129,6 +138,7 @@ ENEMY_UNLOCKS = {
     2: ['pumpkin_pie'],
     4: ['stuffing'],
     6: ['mashed_potato'],
+    8: ['green_bean_casserole'],
     5: ['gravy_boat']  # Boss only on boss levels
 }
 
@@ -155,7 +165,7 @@ POWERUP_TYPES = {
         'color': (0, 255, 255),  # Cyan
         'speed': 2,
         'effect_type': 'fire_rate',
-        'duration': 15000  # 15 seconds in milliseconds
+        'duration': 20000  # 20 seconds in milliseconds
     },
     'extra_life': {
         'radius': 15,
@@ -169,14 +179,14 @@ POWERUP_TYPES = {
         'color': (144, 238, 144),  # Light green
         'speed': 2,
         'effect_type': 'speed_boost',
-        'duration': 15000  # 15 seconds
+        'duration': 30000  # 30 seconds
     },
     'slow_enemies': {
         'radius': 15,
         'color': (173, 216, 230),  # Light blue
         'speed': 2,
         'effect_type': 'slow_enemies',
-        'duration': 15000  # 15 seconds
+        'duration': 10000  # 10 seconds
     }
 }
 
@@ -200,7 +210,8 @@ ENEMY_NAMES = {
     'cranberry': 'Cranberry',
     'stuffing': 'Stuffing',
     'mashed_potato': 'Mashed Potato',
-    'gravy_boat': 'Gravy Boat'
+    'gravy_boat': 'Gravy Boat',
+    'green_bean_casserole': 'Green Bean Casserole'
 }
 
 POWERUP_NAMES = {

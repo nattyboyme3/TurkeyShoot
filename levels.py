@@ -88,7 +88,7 @@ class LevelManager:
 
         return False
 
-    def spawn_next_enemy(self, current_time):
+    def spawn_next_enemy(self, current_time, player=None):
         """Spawn the next enemy for this level"""
         if not self.can_spawn_enemy(current_time):
             return None
@@ -107,7 +107,7 @@ class LevelManager:
         else:
             enemy_type = random.choice(available_types)
 
-        enemy = spawn_enemy(enemy_type, speed_multiplier)
+        enemy = spawn_enemy(enemy_type, speed_multiplier, player)
 
         self.enemies_spawned += 1
         self.last_spawn_time = current_time

@@ -16,7 +16,7 @@ class Enemy:
     # Class-level sprite cache: {(enemy_type, width, height): scaled_surface}
     _sprite_cache = {}
 
-    def __init__(self, enemy_type, x, y, speed_multiplier=1.0):
+    def __init__(self, enemy_type, x, y, speed_multiplier=1.0, player=None):
         config = ENEMY_TYPES[enemy_type]
         self.type = enemy_type
         self.width = config['width']
@@ -32,6 +32,9 @@ class Enemy:
         self.x = x
         self.y = y
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+        # Reference to player for tracking movement
+        self.player = player
 
         # Load sprite if available
         cache_key = (enemy_type, self.width, self.height)
@@ -61,6 +64,8 @@ class Enemy:
             self.move_zigzag()
         elif self.movement_type == 'sine_wave':
             self.move_sine_wave()
+        elif self.movement_type == 'track_player':
+            self.move_track_player()
 
         self.rect.x = int(self.x)
         self.rect.y = int(self.y)
@@ -88,6 +93,35 @@ class Enemy:
         amplitude = 100
         frequency = 0.05
         self.x = self.initial_x + amplitude * math.sin(frequency * self.y + self.time_offset)
+
+        # Keep within bounds
+        if self.x < 0:
+            self.x = 0
+        elif self.x > SCREEN_WIDTH - self.width:
+            self.x = SCREEN_WIDTH - self.width
+
+    def move_track_player(self):
+        """Move toward the player's position"""
+        if not self.player:
+            # Fallback to straight movement if no player reference
+            self.move_straight()
+            return
+
+        # Calculate direction vector to player
+        player_center_x = self.player.x + self.player.width / 2
+        player_center_y = self.player.y + self.player.height / 2
+        enemy_center_x = self.x + self.width / 2
+        enemy_center_y = self.y + self.height / 2
+
+        dx = player_center_x - enemy_center_x
+        dy = player_center_y - enemy_center_y
+
+        # Calculate distance and normalize
+        distance = math.sqrt(dx**2 + dy**2)
+        if distance > 0:
+            # Move toward player at enemy's speed
+            self.x += (dx / distance) * self.speed
+            self.y += (dy / distance) * self.speed
 
         # Keep within bounds
         if self.x < 0:
@@ -142,9 +176,9 @@ class Enemy:
         return self.points
 
 
-def spawn_enemy(enemy_type, speed_multiplier=1.0):
+def spawn_enemy(enemy_type, speed_multiplier=1.0, player=None):
     """Factory function to spawn a random enemy of given type"""
     config = ENEMY_TYPES[enemy_type]
     x = random.randint(ENEMY_SPAWN_MARGIN, SCREEN_WIDTH - config['width'] - ENEMY_SPAWN_MARGIN)
     y = -config['height']
-    return Enemy(enemy_type, x, y, speed_multiplier)
+    return Enemy(enemy_type, x, y, speed_multiplier, player)
