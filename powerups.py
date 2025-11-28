@@ -5,12 +5,15 @@ import pygame
 import random
 from constants import (
     POWERUP_TYPES, SCREEN_HEIGHT, SCREEN_WIDTH,
-    POWERUP_SPAWN_MARGIN
+    POWERUP_SPAWN_MARGIN, SPRITE_DIR, WHITE
 )
 
 
 class PowerUp:
     """Powerup collectible"""
+
+    # Class-level sprite cache: {(powerup_type, size): scaled_surface}
+    _sprite_cache = {}
 
     def __init__(self, x, y, powerup_type):
         config = POWERUP_TYPES[powerup_type]
@@ -24,6 +27,23 @@ class PowerUp:
         self.x = x
         self.y = y
         self.active = True
+
+        # Calculate sprite size (square that fits the circle)
+        self.sprite_size = self.radius * 2
+
+        # Load sprite if available
+        cache_key = (powerup_type, self.sprite_size)
+        if cache_key in PowerUp._sprite_cache:
+            self.sprite = PowerUp._sprite_cache[cache_key]
+        else:
+            sprite_path = f"{SPRITE_DIR}/{powerup_type}.png"
+            try:
+                original = pygame.image.load(sprite_path)
+                scaled = pygame.transform.scale(original, (self.sprite_size, self.sprite_size))
+                PowerUp._sprite_cache[cache_key] = scaled
+                self.sprite = scaled
+            except (pygame.error, FileNotFoundError):
+                self.sprite = None  # Fallback to circle rendering
 
         # Create rect for collision detection (bounding box around circle)
         self.rect = pygame.Rect(
@@ -46,10 +66,18 @@ class PowerUp:
             self.active = False
 
     def draw(self, screen):
-        """Draw the powerup as a circle"""
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
-        # Draw white border for visibility
-        pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), self.radius, 2)
+        """Draw the powerup"""
+        # Draw powerup (sprite if available, otherwise circle)
+        if self.sprite:
+            # Calculate top-left position for sprite (centered on x, y)
+            sprite_x = int(self.x - self.radius)
+            sprite_y = int(self.y - self.radius)
+            screen.blit(self.sprite, (sprite_x, sprite_y))
+        else:
+            # Fallback to circle rendering
+            pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+            # Draw white border for visibility
+            pygame.draw.circle(screen, WHITE, (int(self.x), int(self.y)), self.radius, 2)
 
     def is_active(self):
         """Check if powerup is still active"""

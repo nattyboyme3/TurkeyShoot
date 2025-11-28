@@ -100,13 +100,40 @@ __init__(x, y) → update() [moves, checks bounds] → deactivate() [on collisio
 **State**:
 - Type identifier: `self.type` (string key)
 - Position: `(x, y)` - x random spawn, y starts at -radius
-- Visual: Circle with radius, color from config
+- Visual: Circle with radius, color from config (or sprite if available)
 - Speed: Fixed at 2 px/frame (moves downward like enemies)
 - Effect: `effect_type` and `duration` from config
+- Sprite: `self.sprite` (optional, loaded if available)
+- Sprite size: `sprite_size = radius * 2` (square that fits the circle)
 
-**Rendering**: Circle using `pygame.draw.circle()` + white border for visibility
+**Rendering**:
+- **With sprite**: Blits PNG sprite scaled to fit circle dimensions (radius * 2)
+- **Without sprite**: Circle using `pygame.draw.circle()` + white border for visibility (fallback)
 
-**Collision**: Rectangle-based bounding box via `pygame.Rect` around circle
+**Sprite System**:
+```python
+# Class-level cache: {(powerup_type, sprite_size): scaled_surface}
+_sprite_cache = {}
+
+# Loading (in __init__):
+sprite_path = f"{SPRITE_DIR}/{powerup_type}.png"
+try:
+    original = pygame.image.load(sprite_path)
+    scaled = pygame.transform.scale(original, (sprite_size, sprite_size))
+    _sprite_cache[cache_key] = scaled
+except (pygame.error, FileNotFoundError):
+    sprite = None  # Fallback to circle
+```
+
+**Available Sprites**:
+- fire_rate (30x30)
+- speed_boost (30x30)
+
+**Circle Fallback** (no sprite):
+- extra_life (30x30)
+- slow_enemies (30x30)
+
+**Collision**: Rectangle-based bounding box via `pygame.Rect` around circle/sprite
 
 **Factory**: `spawn_powerup(powerup_type=None)` → returns PowerUp with random x position and random type if not specified
 
@@ -672,7 +699,7 @@ with open(HIGH_SCORE_FILE, 'w') as f:
 - Message cleanup: O(m) where m=messages (max 5)
 - Rendering: O(n+m) draw calls per frame
 
-**Memory**: Minimal. Max ~50 enemies + ~2 powerups on screen simultaneously (hard mode, high levels). Sprites cached at class level (4 sprites × ~90KB each ≈ 360KB). Geometric primitives for non-sprite entities.
+**Memory**: Minimal. Max ~50 enemies + ~2 powerups on screen simultaneously (hard mode, high levels). Sprites cached at class level: enemy sprites (4 × ~90KB ≈ 360KB) + powerup sprites (2 × ~50KB ≈ 100KB) ≈ 460KB total. Geometric primitives for non-sprite entities.
 
 **Frame Budget**: 16.67ms @ 60 FPS. No observed bottlenecks with current implementation.
 
