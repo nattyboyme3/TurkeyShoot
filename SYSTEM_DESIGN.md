@@ -171,7 +171,35 @@ x = initial_x + amplitude * sin(frequency * y + time_offset)
 x = clamp(x, 0, SCREEN_WIDTH - width)
 ```
 
-**Rendering**: Colored rectangle + white border. Multi-health enemies show health bar (5px tall, red background, green foreground proportional to health%).
+**Rendering**:
+- **With sprite**: Blits 150x150 PNG sprite scaled to enemy dimensions
+- **Without sprite**: Colored rectangle + white border (fallback)
+- **Health bar**: Multi-health enemies show health bar (5px tall, red background, green foreground proportional to health%)
+
+**Sprite System**:
+```python
+# Class-level cache: {(enemy_type, width, height): scaled_surface}
+_sprite_cache = {}
+
+# Loading (in __init__):
+sprite_path = f"{SPRITE_DIR}/{enemy_type}.png"
+try:
+    original = pygame.image.load(sprite_path)
+    scaled = pygame.transform.scale(original, (width, height))
+    _sprite_cache[cache_key] = scaled
+except (pygame.error, FileNotFoundError):
+    sprite = None  # Fallback to rectangle
+```
+
+**Available Sprites** (150x150 PNG, scaled to fit):
+- turkey (45x45)
+- cranberry (30x30)
+- pumpkin_pie (40x40)
+- stuffing (35x35)
+
+**Rectangle Fallback** (no sprite):
+- mashed_potato (40x40)
+- gravy_boat (60x50 - boss)
 
 **Factory**: `spawn_enemy(enemy_type, speed_multiplier)` → returns Enemy with random x position.
 
@@ -491,6 +519,8 @@ self.last_powerup_spawn: int                  # Timestamp of last powerup spawn
 
 **Screen**: 800×600, 60 FPS
 
+**Sprites**: Directory `assets/sprites` contains 150x150 PNG sprites for some enemies
+
 **Difficulty Settings**:
 ```python
 {
@@ -626,7 +656,7 @@ with open(HIGH_SCORE_FILE, 'w') as f:
 - Message cleanup: O(m) where m=messages (max 5)
 - Rendering: O(n+m) draw calls per frame
 
-**Memory**: Minimal. Max ~50 enemies + ~2 powerups on screen simultaneously (hard mode, high levels). No texture loading (all geometric primitives).
+**Memory**: Minimal. Max ~50 enemies + ~2 powerups on screen simultaneously (hard mode, high levels). Sprites cached at class level (4 sprites × ~90KB each ≈ 360KB). Geometric primitives for non-sprite entities.
 
 **Frame Budget**: 16.67ms @ 60 FPS. No observed bottlenecks with current implementation.
 
