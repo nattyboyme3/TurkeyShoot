@@ -63,3 +63,19 @@ def check_enemies_reached_bottom(enemies):
             count += 1
 
     return count
+
+
+def check_powerup_player_collision(powerups, player):
+    """
+    Check if any powerup has collided with the player.
+    Returns the collected powerup or None if no collision.
+    """
+    for powerup in powerups:
+        if not powerup.is_active():
+            continue
+
+        if powerup.rect.colliderect(player.rect):
+            powerup.deactivate()
+            return powerup
+
+    return None

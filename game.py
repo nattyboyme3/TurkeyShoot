@@ -4,15 +4,18 @@ Main game loop and state management for Turkey Shoot
 import pygame
 from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, TITLE, BLACK,
-    DIFFICULTY_SETTINGS, WHITE
+    DIFFICULTY_SETTINGS, WHITE, POWERUP_SPAWN_RATE,
+    SLOW_ENEMIES_MODIFIER
 )
 from player import Player
 from projectiles import Bullet
 from enemies import Enemy
+from powerups import spawn_powerup
 from collision import (
     check_bullet_enemy_collisions,
     check_enemy_player_collision,
-    check_enemies_reached_bottom
+    check_enemies_reached_bottom,
+    check_powerup_player_collision
 )
 from scoring import ScoreManager
 from levels import LevelManager
@@ -53,11 +56,17 @@ class Game:
         self.player = None
         self.bullets = []
         self.enemies = []
+        self.powerups = []
 
         # Game variables
         self.lives = 0
         self.level_transition_time = 0
         self.level_transition_duration = 2000  # 2 seconds
+
+        # Powerup tracking
+        self.last_powerup_spawn = 0
+        self.enemy_speed_modifier = 1.0
+        self.enemy_speed_modifier_expiration = 0
 
         # Name input
         self.player_name = ""
@@ -72,9 +81,15 @@ class Game:
         self.player = Player()
         self.bullets = []
         self.enemies = []
+        self.powerups = []
 
         self.score_manager.reset_score()
         self.lives = DIFFICULTY_SETTINGS[difficulty]['lives']
+
+        # Reset powerup state
+        self.last_powerup_spawn = 0
+        self.enemy_speed_modifier = 1.0
+        self.enemy_speed_modifier_expiration = 0
 
         self.state = GameState.PLAYING
 
@@ -187,6 +202,14 @@ class Game:
         """Update playing state"""
         current_time = pygame.time.get_ticks()
 
+        # Update player effects
+        self.player.update_effects(current_time)
+
+        # Update enemy speed modifier expiration
+        if self.enemy_speed_modifier_expiration > 0 and current_time >= self.enemy_speed_modifier_expiration:
+            self.enemy_speed_modifier = 1.0
+            self.enemy_speed_modifier_expiration = 0
+
         # Update player movement
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
@@ -202,9 +225,29 @@ class Game:
             if not bullet.is_active():
                 self.bullets.remove(bullet)
 
-        # Spawn enemies
+        # Spawn powerups
+        if current_time - self.last_powerup_spawn >= POWERUP_SPAWN_RATE:
+            powerup = spawn_powerup()
+            self.powerups.append(powerup)
+            self.last_powerup_spawn = current_time
+
+        # Update powerups
+        for powerup in self.powerups[:]:
+            powerup.update()
+            if not powerup.is_active():
+                self.powerups.remove(powerup)
+
+        # Check powerup-player collision
+        collected_powerup = check_powerup_player_collision(self.powerups, self.player)
+        if collected_powerup:
+            self.apply_powerup_effect(collected_powerup, current_time)
+            self.powerups.remove(collected_powerup)
+
+        # Spawn enemies (apply slow modifier to speed)
         enemy = self.level_manager.spawn_next_enemy(current_time)
         if enemy:
+            # Apply slow enemies modifier if active
+            enemy.speed *= self.enemy_speed_modifier
             self.enemies.append(enemy)
 
         # Update enemies
@@ -243,6 +286,25 @@ class Game:
         """Start level transition"""
         self.state = GameState.LEVEL_TRANSITION
         self.level_transition_time = pygame.time.get_ticks()
+
+    def apply_powerup_effect(self, powerup, current_time):
+        """Apply powerup effect based on type"""
+        effect_type = powerup.effect_type
+        duration = powerup.duration
+
+        if effect_type == 'extra_life':
+            # Instant effect: add a life
+            self.lives += 1
+        elif effect_type == 'slow_enemies':
+            # Global effect: slow all future enemies
+            self.enemy_speed_modifier = SLOW_ENEMIES_MODIFIER
+            self.enemy_speed_modifier_expiration = current_time + duration
+            # Also slow existing enemies
+            for enemy in self.enemies:
+                enemy.speed *= SLOW_ENEMIES_MODIFIER
+        else:
+            # Player-specific effects (fire_rate, speed_boost)
+            self.player.apply_powerup(effect_type, duration, current_time)
 
     def lose_life(self):
         """Player loses a life"""
@@ -304,6 +366,10 @@ class Game:
         # Draw bullets
         for bullet in self.bullets:
             bullet.draw(self.screen)
+
+        # Draw powerups
+        for powerup in self.powerups:
+            powerup.draw(self.screen)
 
         # Draw enemies
         for enemy in self.enemies:

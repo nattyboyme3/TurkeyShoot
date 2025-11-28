@@ -142,3 +142,44 @@ MENU_BUTTON_SPACING = 20
 # High scores
 MAX_HIGH_SCORES = 10
 HIGH_SCORE_FILE = 'data/highscores.json'
+
+# Powerup settings
+POWERUP_SPAWN_MARGIN = 50
+POWERUP_SPAWN_RATE = 8000  # milliseconds between powerup spawns
+
+# Powerup types configuration
+POWERUP_TYPES = {
+    'fire_rate': {
+        'radius': 15,
+        'color': (0, 255, 255),  # Cyan
+        'speed': 2,
+        'effect_type': 'fire_rate',
+        'duration': 15000  # 15 seconds in milliseconds
+    },
+    'extra_life': {
+        'radius': 15,
+        'color': (255, 20, 147),  # Deep pink
+        'speed': 2,
+        'effect_type': 'extra_life',
+        'duration': 0  # Instant effect
+    },
+    'speed_boost': {
+        'radius': 15,
+        'color': (144, 238, 144),  # Light green
+        'speed': 2,
+        'effect_type': 'speed_boost',
+        'duration': 15000  # 15 seconds
+    },
+    'slow_enemies': {
+        'radius': 15,
+        'color': (173, 216, 230),  # Light blue
+        'speed': 2,
+        'effect_type': 'slow_enemies',
+        'duration': 15000  # 15 seconds
+    }
+}
+
+# Powerup effect modifiers
+FIRE_RATE_MODIFIER = 0.9  # 10% faster (cooldown reduced to 90%)
+SPEED_BOOST_MODIFIER = 1.1  # 10% faster movement
+SLOW_ENEMIES_MODIFIER = 0.9  # 10% slower enemies
