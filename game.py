@@ -5,7 +5,8 @@ import pygame
 from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, TITLE, BLACK,
     DIFFICULTY_SETTINGS, WHITE, POWERUP_SPAWN_RATE,
-    SLOW_ENEMIES_MODIFIER
+    SLOW_ENEMIES_MODIFIER, ENEMY_NAMES, POWERUP_NAMES,
+    YELLOW, GREEN, BLUE
 )
 from player import Player
 from projectiles import Bullet
@@ -19,7 +20,7 @@ from collision import (
 )
 from scoring import ScoreManager
 from levels import LevelManager
-from ui import UI
+from ui import UI, MessageQueue
 
 
 class GameState:
@@ -29,7 +30,6 @@ class GameState:
     PAUSED = 'paused'
     GAME_OVER = 'game_over'
     HIGH_SCORES = 'high_scores'
-    LEVEL_TRANSITION = 'level_transition'
     NAME_INPUT = 'name_input'
 
 
@@ -51,6 +51,7 @@ class Game:
         self.score_manager = ScoreManager()
         self.level_manager = None
         self.ui = UI(self.screen)
+        self.message_queue = MessageQueue()
 
         # Game objects
         self.player = None
@@ -60,8 +61,6 @@ class Game:
 
         # Game variables
         self.lives = 0
-        self.level_transition_time = 0
-        self.level_transition_duration = 2000  # 2 seconds
 
         # Powerup tracking
         self.last_powerup_spawn = 0
@@ -195,20 +194,25 @@ class Game:
         """Update game state"""
         if self.state == GameState.PLAYING:
             self.update_playing()
-        elif self.state == GameState.LEVEL_TRANSITION:
-            self.update_level_transition()
 
     def update_playing(self):
         """Update playing state"""
         current_time = pygame.time.get_ticks()
 
-        # Update player effects
-        self.player.update_effects(current_time)
+        # Update message queue
+        self.message_queue.update(current_time)
+
+        # Update player effects and track expirations
+        expired_effects = self.player.update_effects(current_time)
+        for effect in expired_effects:
+            effect_name = POWERUP_NAMES.get(effect, effect)
+            self.message_queue.add_message(f"{effect_name} ended", YELLOW, current_time)
 
         # Update enemy speed modifier expiration
         if self.enemy_speed_modifier_expiration > 0 and current_time >= self.enemy_speed_modifier_expiration:
             self.enemy_speed_modifier = 1.0
             self.enemy_speed_modifier_expiration = 0
+            self.message_queue.add_message("Slow Enemies! ended", YELLOW, current_time)
 
         # Update player movement
         keys = pygame.key.get_pressed()
@@ -242,6 +246,9 @@ class Game:
         if collected_powerup:
             self.apply_powerup_effect(collected_powerup, current_time)
             self.powerups.remove(collected_powerup)
+            # Add message for powerup collection
+            powerup_name = POWERUP_NAMES.get(collected_powerup.effect_type, collected_powerup.effect_type)
+            self.message_queue.add_message(powerup_name, GREEN, current_time)
 
         # Spawn enemies (apply slow modifier to speed)
         enemy = self.level_manager.spawn_next_enemy(current_time)
@@ -261,6 +268,11 @@ class Game:
         if score_gained > 0:
             self.score_manager.add_points(score_gained)
 
+        # Add messages for enemy kills
+        for bullet, enemy in collisions:
+            enemy_name = ENEMY_NAMES.get(enemy.type, enemy.type)
+            self.message_queue.add_message(f"Killed {enemy_name}", WHITE, current_time)
+
         # Check player-enemy collision
         if check_enemy_player_collision(self.enemies, self.player):
             self.lose_life()
@@ -273,19 +285,10 @@ class Game:
         # Check level completion
         active_enemies = len([e for e in self.enemies if e.is_active()])
         if self.level_manager.is_level_complete(active_enemies):
-            self.start_level_transition()
-
-    def update_level_transition(self):
-        """Update level transition state"""
-        current_time = pygame.time.get_ticks()
-        if current_time - self.level_transition_time >= self.level_transition_duration:
+            # Advance level immediately (no transition state)
             self.level_manager.advance_level()
-            self.state = GameState.PLAYING
-
-    def start_level_transition(self):
-        """Start level transition"""
-        self.state = GameState.LEVEL_TRANSITION
-        self.level_transition_time = pygame.time.get_ticks()
+            new_level = self.level_manager.get_current_level()
+            self.message_queue.add_message(f"Level {new_level}!", BLUE, current_time, duration=4000)
 
     def apply_powerup_effect(self, powerup, current_time):
         """Apply powerup effect based on type"""
@@ -315,7 +318,6 @@ class Game:
     def game_over(self):
         """Handle game over"""
         score = self.score_manager.get_score()
-        level = self.level_manager.get_current_level()
 
         # Check if high score
         if self.score_manager.is_high_score(score, self.difficulty):
@@ -347,10 +349,6 @@ class Game:
         elif self.state == GameState.HIGH_SCORES:
             self.high_score_buttons = self.ui.draw_high_scores(self.score_manager)
 
-        elif self.state == GameState.LEVEL_TRANSITION:
-            self.draw_playing()
-            self.ui.draw_level_transition(self.level_manager.get_current_level() + 1)
-
         elif self.state == GameState.NAME_INPUT:
             self.draw_playing()
             self.ui.draw_name_input(self.player_name)
@@ -381,6 +379,9 @@ class Game:
             self.lives,
             self.level_manager.get_current_level()
         )
+
+        # Draw messages
+        self.ui.draw_messages(self.message_queue)
 
     def run(self):
         """Main game loop"""

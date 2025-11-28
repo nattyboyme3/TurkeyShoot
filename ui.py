@@ -5,8 +5,34 @@ import pygame
 from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, BLACK, RED, GREEN, BLUE,
     YELLOW, ORANGE, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE,
-    MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, MENU_BUTTON_SPACING
+    MENU_BUTTON_WIDTH, MENU_BUTTON_HEIGHT, MENU_BUTTON_SPACING,
+    MESSAGE_DURATION, MESSAGE_MAX_VISIBLE
 )
+
+
+class MessageQueue:
+    """Manages timed notification messages"""
+
+    def __init__(self):
+        self.messages = []  # List of (text, color, expiration_time) tuples
+
+    def add_message(self, text, color, current_time, duration=MESSAGE_DURATION):
+        """Add a new message to the queue"""
+        expiration_time = current_time + duration
+        self.messages.append((text, color, expiration_time))
+
+        # Keep only the most recent messages
+        if len(self.messages) > MESSAGE_MAX_VISIBLE:
+            self.messages = self.messages[-MESSAGE_MAX_VISIBLE:]
+
+    def update(self, current_time):
+        """Remove expired messages"""
+        self.messages = [(text, color, exp_time) for text, color, exp_time in self.messages
+                        if current_time < exp_time]
+
+    def get_visible_messages(self):
+        """Get list of currently visible messages (text, color)"""
+        return [(text, color) for text, color, _ in self.messages]
 
 
 class Button:
@@ -230,3 +256,31 @@ class UI:
 
         self.draw_text("Press ENTER to submit", self.small_font, WHITE,
                       SCREEN_WIDTH // 2, 350, center=True)
+
+    def draw_messages(self, message_queue):
+        """Draw notification messages in bottom-right corner"""
+        from constants import MESSAGE_X, MESSAGE_Y, MESSAGE_WIDTH, MESSAGE_LINE_HEIGHT
+
+        messages = message_queue.get_visible_messages()
+        if not messages:
+            return
+
+        # Calculate background box height
+        box_height = len(messages) * MESSAGE_LINE_HEIGHT + 10
+        box_y = MESSAGE_Y + (MESSAGE_MAX_VISIBLE - len(messages)) * MESSAGE_LINE_HEIGHT
+
+        # Draw semi-transparent background
+        background = pygame.Surface((MESSAGE_WIDTH, box_height))
+        background.set_alpha(180)
+        background.fill(BLACK)
+        self.screen.blit(background, (MESSAGE_X, box_y))
+
+        # Draw border
+        pygame.draw.rect(self.screen, WHITE,
+                        (MESSAGE_X, box_y, MESSAGE_WIDTH, box_height), 2)
+
+        # Draw messages (newest at bottom)
+        y = box_y + 5
+        for text, color in messages:
+            self.draw_text(text, self.small_font, color, MESSAGE_X + 5, y)
+            y += MESSAGE_LINE_HEIGHT

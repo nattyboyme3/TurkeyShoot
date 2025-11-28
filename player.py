@@ -84,7 +84,7 @@ class Player:
         self.update_modifiers()
 
     def update_effects(self, current_time):
-        """Update active effects and remove expired ones"""
+        """Update active effects and remove expired ones. Returns list of expired effects."""
         # Remove expired effects
         expired = [effect for effect, expiration in self.active_effects.items()
                    if current_time >= expiration]
@@ -94,6 +94,8 @@ class Player:
         # Recalculate modifiers if any effects expired
         if expired:
             self.update_modifiers()
+
+        return expired
 
     def update_modifiers(self):
         """Recalculate speed and cooldown modifiers based on active effects"""

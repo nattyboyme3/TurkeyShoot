@@ -180,6 +180,31 @@ POWERUP_TYPES = {
 }
 
 # Powerup effect modifiers
-FIRE_RATE_MODIFIER = 0.9  # 10% faster (cooldown reduced to 90%)
-SPEED_BOOST_MODIFIER = 1.1  # 10% faster movement
-SLOW_ENEMIES_MODIFIER = 0.9  # 10% slower enemies
+FIRE_RATE_MODIFIER = 0.6  # 40% faster (cooldown reduced to 60%)
+SPEED_BOOST_MODIFIER = 1.3  # 30% faster movement
+SLOW_ENEMIES_MODIFIER = 0.5  # 50% slower enemies
+
+# Message notification settings
+MESSAGE_DURATION = 3000  # milliseconds messages stay on screen
+MESSAGE_MAX_VISIBLE = 5  # maximum number of messages shown at once
+MESSAGE_X = SCREEN_WIDTH - 250  # bottom-right corner
+MESSAGE_Y = SCREEN_HEIGHT - 150
+MESSAGE_WIDTH = 240
+MESSAGE_LINE_HEIGHT = 22
+
+# Friendly names for game events
+ENEMY_NAMES = {
+    'turkey': 'Turkey',
+    'pumpkin_pie': 'Pumpkin Pie',
+    'cranberry': 'Cranberry',
+    'stuffing': 'Stuffing',
+    'mashed_potato': 'Mashed Potato',
+    'gravy_boat': 'Gravy Boat'
+}
+
+POWERUP_NAMES = {
+    'fire_rate': 'Rapid Fire!',
+    'extra_life': 'Extra Life!',
+    'speed_boost': 'Speed Boost!',
+    'slow_enemies': 'Slow Enemies!'
+}
