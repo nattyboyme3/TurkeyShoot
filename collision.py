@@ -55,10 +55,9 @@ def check_enemies_reached_bottom(enemies):
     Returns count of enemies that reached bottom and deactivates them.
     """
     from constants import SCREEN_HEIGHT
-
     count = 0
     for enemy in enemies:
-        if enemy.is_active() and enemy.y >= SCREEN_HEIGHT:
+        if enemy.is_active() and enemy.y >= SCREEN_HEIGHT - 10:
             enemy.active = False
             count += 1
 

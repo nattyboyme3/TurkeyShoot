@@ -37,7 +37,7 @@ class LevelManager:
             if level <= self.current_level:
                 for enemy_type in enemy_types:
                     # Only add gravy_boat on boss levels
-                    if enemy_type == 'gravy_boat':
+                    if enemy_type == 'turkey':
                         if self.is_boss_level():
                             available.append(enemy_type)
                     else:
@@ -99,10 +99,10 @@ class LevelManager:
         # Boss spawning logic
         if self.is_boss_level() and self.enemies_spawned == 0:
             # First enemy on boss level is always the boss
-            enemy_type = 'gravy_boat'
-        elif 'gravy_boat' in available_types:
+            enemy_type = 'turkey'
+        elif 'turkey' in available_types:
             # Remove boss from normal spawn pool
-            available_types = [t for t in available_types if t != 'gravy_boat']
+            available_types = [t for t in available_types if t != 'turkey']
             enemy_type = random.choice(available_types)
         else:
             enemy_type = random.choice(available_types)

@@ -206,7 +206,7 @@ class UI:
                               x, y, center=True)
             else:
                 for j, score_entry in enumerate(scores[:10], 1):
-                    score_text = f"{j}. {score_entry['score']}"
+                    score_text = f"{score_entry['score']} - {score_entry['name']}"
                     self.draw_text(score_text, self.small_font, WHITE,
                                   x, y, center=True)
                     y += 25
