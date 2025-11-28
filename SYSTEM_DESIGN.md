@@ -17,6 +17,7 @@ main.py
   └─> game.py
        ├─> player.py → constants.py
        ├─> projectiles.py → constants.py
+       ├─> powerups.py → constants.py
        ├─> enemies.py → constants.py
        ├─> collision.py → constants.py
        ├─> scoring.py → constants.py
@@ -81,7 +82,53 @@ __init__(x, y) → update() [moves, checks bounds] → deactivate() [on collisio
 
 **Collision**: Rectangle-based via `pygame.Rect`. Bullets removed from game.bullets list when `not is_active()`.
 
-### 3. Enemy System (enemies.py)
+### 3. PowerUp System (powerups.py)
+
+**Class**: `PowerUp`
+
+**Type Configuration** (POWERUP_TYPES dict in constants.py):
+```python
+{
+  'fire_rate': {radius, color, speed, effect_type: 'fire_rate', duration: 15000},
+  'extra_life': {radius, color, speed, effect_type: 'extra_life', duration: 0},
+  'speed_boost': {radius, color, speed, effect_type: 'speed_boost', duration: 15000},
+  'slow_enemies': {radius, color, speed, effect_type: 'slow_enemies', duration: 15000}
+}
+```
+
+**State**:
+- Type identifier: `self.type` (string key)
+- Position: `(x, y)` - x random spawn, y starts at -radius
+- Visual: Circle with radius, color from config
+- Speed: Fixed at 2 px/frame (moves downward like enemies)
+- Effect: `effect_type` and `duration` from config
+
+**Rendering**: Circle using `pygame.draw.circle()` + white border for visibility
+
+**Collision**: Rectangle-based bounding box via `pygame.Rect` around circle
+
+**Factory**: `spawn_powerup(powerup_type=None)` → returns PowerUp with random x position and random type if not specified
+
+**Effect Application** (in game.py):
+```python
+# Player-specific effects (tracked in Player.active_effects)
+fire_rate: Reduces shoot_cooldown by 10% (cooldown_modifier = 0.9)
+speed_boost: Increases movement speed by 10% (speed_modifier = 1.1)
+
+# Global effects (tracked in Game state)
+slow_enemies: Reduces all enemy speeds by 10% (enemy_speed_modifier = 0.9)
+
+# Instant effects
+extra_life: Immediately adds 1 life (no duration tracking)
+```
+
+**Effect Timing**:
+- Timed effects: Stored with expiration timestamp (current_time + duration)
+- Player effects: Checked/expired in `Player.update_effects(current_time)`
+- Global effects: Checked/expired in `Game.update_playing()`
+- Duration: 15000ms (15 seconds) for temporary effects, 0 for instant
+
+### 4. Enemy System (enemies.py)
 
 **Class**: `Enemy` (unified class for all enemy types)
 
@@ -127,7 +174,7 @@ x = clamp(x, 0, SCREEN_WIDTH - width)
 
 **Factory**: `spawn_enemy(enemy_type, speed_multiplier)` → returns Enemy with random x position.
 
-### 4. Collision System (collision.py)
+### 5. Collision System (collision.py)
 
 **Pure Functions** (no state):
 
@@ -146,11 +193,16 @@ check_enemy_player_collision(enemies, player) -> bool
 check_enemies_reached_bottom(enemies) -> int
   # Returns count of enemies at y >= SCREEN_HEIGHT
   # Deactivates those enemies
+
+check_powerup_player_collision(powerups, player) -> PowerUp | None
+  # Returns collected powerup if collision detected
+  # Deactivates collected powerup
+  # Returns None if no collision
 ```
 
 **Called from**: `game.py:update_playing()` every frame.
 
-### 5. Scoring System (scoring.py)
+### 6. Scoring System (scoring.py)
 
 **Class**: `ScoreManager`
 
@@ -176,7 +228,7 @@ add_high_score(name, score, difficulty, level)  # Auto-sorts and trims to top 10
 get_high_scores(difficulty) -> list[dict]
 ```
 
-### 6. Level System (levels.py)
+### 7. Level System (levels.py)
 
 **Class**: `LevelManager`
 
@@ -240,7 +292,7 @@ advance_level():
     start_level()  # Recalculates enemies_in_level, resets spawn tracking
 ```
 
-### 7. UI System (ui.py)
+### 8. UI System (ui.py)
 
 **Class**: `UI`
 
@@ -306,15 +358,20 @@ while running:
 
 **PLAYING State** (`update_playing()`):
 ```python
-1. Process continuous input (LEFT/RIGHT/A/D keys, SPACE for shooting)
-2. Update player position
-3. Update all bullets (move up, remove if off-screen)
-4. Spawn enemies (if can_spawn_enemy() and level_manager allows)
-5. Update all enemies (move based on pattern, remove if off-screen)
-6. Check bullet-enemy collisions → add score
-7. Check player-enemy collisions → lose_life()
-8. Check enemies reached bottom → lose_life()
-9. Check level completion → start_level_transition()
+1. Update player effects (remove expired powerup effects)
+2. Update enemy speed modifier (remove if expired)
+3. Process continuous input (LEFT/RIGHT/A/D keys, SPACE for shooting)
+4. Update player position (apply speed_modifier)
+5. Update all bullets (move up, remove if off-screen)
+6. Spawn powerups (time-based, every POWERUP_SPAWN_RATE ms)
+7. Update all powerups (move down, remove if off-screen)
+8. Check powerup-player collision → apply_powerup_effect()
+9. Spawn enemies (if can_spawn_enemy() and level_manager allows, apply enemy_speed_modifier)
+10. Update all enemies (move based on pattern, remove if off-screen)
+11. Check bullet-enemy collisions → add score
+12. Check player-enemy collisions → lose_life()
+13. Check enemies reached bottom → lose_life()
+14. Check level completion → start_level_transition()
 ```
 
 **LEVEL_TRANSITION State**:
@@ -344,12 +401,29 @@ game_over():
 ```python
 self.bullets: list[Bullet]           # Active projectiles
 self.enemies: list[Enemy]            # Active enemies
+self.powerups: list[PowerUp]         # Active powerups
 ```
 
 **List Management**:
 - Append on spawn/shoot
 - Remove when `not obj.is_active()` (checked every frame)
 - Iterate with `for obj in list[:]` (slice copy) when removing during iteration
+
+### Effect Tracking
+
+**Player Effects** (player.py):
+```python
+self.active_effects: dict[str, int]  # {effect_type: expiration_time}
+self.speed_modifier: float           # Recalculated from active_effects
+self.cooldown_modifier: float        # Recalculated from active_effects
+```
+
+**Global Effects** (game.py):
+```python
+self.enemy_speed_modifier: float              # Applied to all spawned enemies
+self.enemy_speed_modifier_expiration: int     # Timestamp when effect expires
+self.last_powerup_spawn: int                  # Timestamp of last powerup spawn
+```
 
 ### Configuration (constants.py)
 
@@ -397,9 +471,16 @@ handle_events():
 **Timestamps**: `pygame.time.get_ticks()` → milliseconds since pygame.init()
 
 **Cooldowns**:
-- Player shoot: 250ms (`last_shot` + `PLAYER_SHOOT_COOLDOWN`)
+- Player shoot: 250ms (`last_shot` + `PLAYER_SHOOT_COOLDOWN * cooldown_modifier`)
 - Enemy spawn: Variable per difficulty (`last_spawn_time` + `spawn_rate`)
+- Powerup spawn: 8000ms (`last_powerup_spawn` + `POWERUP_SPAWN_RATE`)
 - Level transition: 2000ms (`level_transition_time` + 2000)
+
+**Effect Durations**:
+- Fire rate boost: 15000ms (15 seconds)
+- Speed boost: 15000ms (15 seconds)
+- Slow enemies: 15000ms (15 seconds)
+- Extra life: Instant (0ms duration)
 
 ## Rendering Pipeline
 
@@ -408,10 +489,11 @@ handle_events():
 1. screen.fill(BLACK)                    # Clear screen
 2. Player (if exists)                    # Bottom of screen
 3. All bullets                           # Moving upward
-4. All enemies                           # Moving downward
-5. HUD (score, lives, level)             # Top overlay
-6. State-specific overlays (if any)      # Menu, game over, etc.
-7. pygame.display.flip()                 # Swap buffers
+4. All powerups                          # Moving downward (circles)
+5. All enemies                           # Moving downward
+6. HUD (score, lives, level)             # Top overlay
+7. State-specific overlays (if any)      # Menu, game over, etc.
+8. pygame.display.flip()                 # Swap buffers
 ```
 
 **Coordinate System**: Origin (0,0) at top-left, +x right, +y down
@@ -470,12 +552,14 @@ with open(HIGH_SCORE_FILE, 'w') as f:
 ## Performance Characteristics
 
 **Complexity**:
-- Collision detection: O(n*m) where n=bullets, m=enemies (typical: n≈5, m≈10-30)
+- Collision detection: O(n*m + p*1) where n=bullets, m=enemies, p=powerups (typical: n≈5, m≈10-30, p≈0-2)
 - Enemy spawning: O(1) per frame
-- List cleanup: O(n) per frame (bullets + enemies)
+- Powerup spawning: O(1) per frame (8-second intervals)
+- List cleanup: O(n) per frame (bullets + enemies + powerups)
+- Effect expiration: O(e) where e=active player effects (max 2: fire_rate + speed_boost)
 - Rendering: O(n) draw calls per frame
 
-**Memory**: Minimal. Max ~50 enemies on screen simultaneously (hard mode, high levels). No texture loading (all geometric primitives).
+**Memory**: Minimal. Max ~50 enemies + ~2 powerups on screen simultaneously (hard mode, high levels). No texture loading (all geometric primitives).
 
 **Frame Budget**: 16.67ms @ 60 FPS. No observed bottlenecks with current implementation.
 
@@ -486,11 +570,14 @@ with open(HIGH_SCORE_FILE, 'w') as f:
 2. Add to `ENEMY_UNLOCKS` with level number
 3. (Optional) Implement new movement type in `Enemy.update()`
 
-### Adding Power-ups
-1. Create `powerups.py` with `PowerUp` class similar to `Bullet`
-2. Add spawn logic to `levels.py`
-3. Add collision check in `game.py:update_playing()`
-4. Add effect application to `Player` class
+### Modifying Power-up Effects
+1. Adjust effect modifiers in `constants.py` (FIRE_RATE_MODIFIER, SPEED_BOOST_MODIFIER, SLOW_ENEMIES_MODIFIER)
+2. Adjust spawn rate via POWERUP_SPAWN_RATE (8000ms = every 8 seconds)
+3. Adjust effect duration in POWERUP_TYPES (15000ms default)
+4. Add new powerup type:
+   - Add entry to POWERUP_TYPES in constants.py
+   - Handle in `game.py:apply_powerup_effect()`
+   - Add to `player.py:update_modifiers()` if player-specific
 
 ### Adding Sounds
 1. Load sounds in `Game.__init__()`: `pygame.mixer.Sound('path')`
@@ -602,7 +689,13 @@ self.clock.tick(10)  # 10 FPS instead of 60
 **Active Objects**:
 - All objects in `self.bullets` have `is_active() == True`
 - All objects in `self.enemies` have `is_active() == True`
+- All objects in `self.powerups` have `is_active() == True`
 - Inactive objects removed at end of update loop
+
+**Effect Expiration**:
+- Player effects expire when `current_time >= expiration_time` in `active_effects`
+- Global enemy slow expires when `current_time >= enemy_speed_modifier_expiration`
+- Modifiers recalculated immediately upon expiration
 
 **Level Completion**:
 - `enemies_spawned >= enemies_in_level` (all spawned)
@@ -643,6 +736,10 @@ self.clock.tick(10)  # 10 FPS instead of 60
 4. **Zigzag boundary**: Enemies reverse direction on wall hit, not at screen center. Can cause clustering.
 5. **Sine wave amplitude**: Fixed at 100px. Boss can still move full screen width on high levels due to long path.
 6. **Score not saved until name entered**: Closing game during NAME_INPUT state loses high score.
+7. **Powerup effect stacking**: Same effect type resets expiration (extends duration, doesn't stack multiplier).
+8. **Slow enemies affects existing**: When slow_enemies powerup collected, existing enemies immediately slowed (not just new spawns).
+9. **Effect modifiers multiplicative**: Multiple effects combine multiplicatively (e.g., 1.1 * 1.1 = 1.21x if hypothetically stacked).
+10. **Powerup collision uses bounding box**: Circular powerups use rectangular Rect for collision (slightly larger hit area).
 
 ---
 
