@@ -6,12 +6,15 @@ import math
 import random
 from constants import (
     ENEMY_TYPES, SCREEN_WIDTH, SCREEN_HEIGHT,
-    ENEMY_SPAWN_MARGIN, WHITE
+    ENEMY_SPAWN_MARGIN, WHITE, SPRITE_DIR
 )
 
 
 class Enemy:
     """Base enemy class"""
+
+    # Class-level sprite cache: {(enemy_type, width, height): scaled_surface}
+    _sprite_cache = {}
 
     def __init__(self, enemy_type, x, y, speed_multiplier=1.0):
         config = ENEMY_TYPES[enemy_type]
@@ -29,6 +32,20 @@ class Enemy:
         self.x = x
         self.y = y
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+        # Load sprite if available
+        cache_key = (enemy_type, self.width, self.height)
+        if cache_key in Enemy._sprite_cache:
+            self.sprite = Enemy._sprite_cache[cache_key]
+        else:
+            sprite_path = f"{SPRITE_DIR}/{enemy_type}.png"
+            try:
+                original = pygame.image.load(sprite_path)
+                scaled = pygame.transform.scale(original, (self.width, self.height))
+                Enemy._sprite_cache[cache_key] = scaled
+                self.sprite = scaled
+            except (pygame.error, FileNotFoundError):
+                self.sprite = None  # Fallback to rectangle rendering
 
         # Movement specific variables
         self.initial_x = x
@@ -88,11 +105,13 @@ class Enemy:
 
     def draw(self, screen):
         """Draw the enemy"""
-        # Draw enemy body
-        pygame.draw.rect(screen, self.color, self.rect)
-
-        # Draw border
-        pygame.draw.rect(screen, WHITE, self.rect, 2)
+        # Draw enemy (sprite if available, otherwise rectangle)
+        if self.sprite:
+            screen.blit(self.sprite, (self.x, self.y))
+        else:
+            # Fallback to rectangle rendering
+            pygame.draw.rect(screen, self.color, self.rect)
+            pygame.draw.rect(screen, WHITE, self.rect, 2)
 
         # Draw health bar if enemy has more than 1 HP
         if self.max_health > 1:

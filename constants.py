@@ -36,6 +36,7 @@ BULLET_COLOR = YELLOW
 # Enemy settings
 ENEMY_BASE_SPEED = 2
 ENEMY_SPAWN_MARGIN = 50
+SPRITE_DIR = 'assets/sprites'
 
 # Enemy types configuration
 ENEMY_TYPES = {
