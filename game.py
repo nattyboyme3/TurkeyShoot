@@ -6,7 +6,7 @@ from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, FPS, TITLE, BLACK,
     DIFFICULTY_SETTINGS, WHITE, POWERUP_SPAWN_RATE,
     SLOW_ENEMIES_MODIFIER, ENEMY_NAMES, POWERUP_NAMES,
-    YELLOW, GREEN, BLUE
+    YELLOW, GREEN, BLUE, RED
 )
 from player import Player
 from projectiles import Bullet
@@ -311,6 +311,13 @@ class Game:
 
     def lose_life(self):
         """Player loses a life"""
+        # Clear player powerup effects and notify
+        current_time = pygame.time.get_ticks()
+        cleared_effects = self.player.clear_player_effects()
+        for effect in cleared_effects:
+            effect_name = POWERUP_NAMES.get(effect, effect)
+            self.message_queue.add_message(f"{effect_name} lost", RED, current_time)
+
         self.lives -= 1
         if self.lives <= 0:
             self.game_over()

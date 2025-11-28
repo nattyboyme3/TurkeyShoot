@@ -139,22 +139,28 @@ except (pygame.error, FileNotFoundError):
 
 **Effect Application** (in game.py):
 ```python
-# Player-specific effects (tracked in Player.active_effects)
-fire_rate: Reduces shoot_cooldown by 10% (cooldown_modifier = 0.9)
-speed_boost: Increases movement speed by 10% (speed_modifier = 1.1)
+# Player-specific PERSISTENT effects (tracked in Player.active_effects, cleared on life loss)
+fire_rate: Reduces shoot_cooldown by 40% (cooldown_modifier = 0.6) - PERSISTENT
+speed_boost: Increases movement speed by 30% (speed_modifier = 1.3) - PERSISTENT
 
-# Global effects (tracked in Game state)
-slow_enemies: Reduces all enemy speeds by 10% (enemy_speed_modifier = 0.9)
+# Global TIMED effects (tracked in Game state)
+slow_enemies: Reduces all enemy speeds by 50% (enemy_speed_modifier = 0.5) - 10 seconds
 
 # Instant effects
 extra_life: Immediately adds 1 life (no duration tracking)
 ```
 
 **Effect Timing**:
-- Timed effects: Stored with expiration timestamp (current_time + duration)
-- Player effects: Checked/expired in `Player.update_effects(current_time)`
-- Global effects: Checked/expired in `Game.update_playing()`
-- Duration: 15000ms (15 seconds) for temporary effects, 0 for instant
+- **Persistent effects (duration = -1)**: Stored with expiration = -1, never expire based on time
+  - Only cleared when player loses a life via `player.clear_player_effects()`
+  - Applies to: fire_rate, speed_boost
+  - Message on loss: "{effect_name} lost" (RED color)
+- **Timed effects**: Stored with expiration timestamp (current_time + duration)
+  - Expire automatically after duration
+  - Applies to: slow_enemies (10000ms)
+  - Message on expiration: "{effect_name} ended" (YELLOW color)
+- **Instant effects (duration = 0)**: No tracking, immediate application
+  - Applies to: extra_life
 
 ### 4. Enemy System (enemies.py)
 
@@ -392,8 +398,11 @@ get_visible_messages() -> list[(text, color)]
 # Powerup collection (GREEN)
 "Rapid Fire!", "Extra Life!", "Speed Boost!", "Slow Enemies!"
 
-# Powerup expiration (YELLOW)
-"Rapid Fire! ended", "Speed Boost! ended", "Slow Enemies! ended"
+# Powerup expiration - timed only (YELLOW)
+"Slow Enemies! ended"
+
+# Powerup loss - persistent effects cleared on life loss (RED)
+"Rapid Fire! lost", "Speed Boost! lost"
 
 # Enemy kills (WHITE)
 "Killed Turkey", "Killed Cranberry", etc.
@@ -502,6 +511,11 @@ while running:
 ### Life Management
 ```python
 lose_life():
+    # Clear persistent player powerup effects
+    cleared_effects = player.clear_player_effects()
+    for effect in cleared_effects:
+        message_queue.add_message(f"{effect_name} lost", RED, current_time)
+
     lives -= 1
     if lives <= 0:
         game_over()
@@ -546,9 +560,14 @@ self.messages: list[(text, color, expiration_time)]  # Timed message queue
 
 **Player Effects** (player.py):
 ```python
-self.active_effects: dict[str, int]  # {effect_type: expiration_time}
+self.active_effects: dict[str, int]  # {effect_type: expiration_time OR -1 for persistent}
 self.speed_modifier: float           # Recalculated from active_effects
 self.cooldown_modifier: float        # Recalculated from active_effects
+
+# Methods:
+apply_powerup(effect_type, duration, current_time)  # duration == -1 → persistent
+update_effects(current_time) -> list  # Skips effects with expiration == -1, returns expired
+clear_player_effects() -> list  # Clears all effects, called on life loss, returns cleared
 ```
 
 **Global Effects** (game.py):
@@ -876,13 +895,15 @@ self.clock.tick(10)  # 10 FPS instead of 60
 4. **Zigzag boundary**: Enemies reverse direction on wall hit, not at screen center. Can cause clustering.
 5. **Sine wave amplitude**: Fixed at 100px. Boss can still move full screen width on high levels due to long path.
 6. **Score not saved until name entered**: Closing game during NAME_INPUT state loses high score.
-7. **Powerup effect stacking**: Same effect type resets expiration (extends duration, doesn't stack multiplier).
-8. **Slow enemies affects existing**: When slow_enemies powerup collected, existing enemies immediately slowed (not just new spawns).
-9. **Effect modifiers multiplicative**: Multiple effects combine multiplicatively (e.g., 1.1 * 1.1 = 1.21x if hypothetically stacked).
-10. **Powerup collision uses bounding box**: Circular powerups use rectangular Rect for collision (slightly larger hit area).
-11. **Message flooding**: Rapidly killing many enemies can fill message queue (only 5 visible, older messages pushed out).
-12. **Message timing**: All messages use game time, so pausing (if implemented) would freeze expiration.
-13. **Player-tracking enemies**: Green bean casserole enemies require player reference passed through spawn chain (Game → LevelManager → spawn_enemy). Without player reference, they fall back to straight movement.
+7. **Powerup effect persistence**: fire_rate and speed_boost are persistent (never expire based on time), only cleared on life loss. Collecting same persistent effect again refreshes it (no stacking).
+8. **Powerup effect expiration**: Only slow_enemies expires based on time (10 seconds). Persistent effects (fire_rate, speed_boost) never expire until life loss.
+9. **Life loss clears player effects**: When player loses a life, all persistent powerup effects (fire_rate, speed_boost) are immediately cleared with red "lost" messages.
+10. **Slow enemies affects existing**: When slow_enemies powerup collected, existing enemies immediately slowed (not just new spawns).
+11. **Effect modifiers multiplicative**: Multiple effects combine multiplicatively (e.g., 1.3 * 0.6 = 0.78x for speed_boost + fire_rate).
+12. **Powerup collision uses bounding box**: Circular powerups use rectangular Rect for collision (slightly larger hit area).
+13. **Message flooding**: Rapidly killing many enemies can fill message queue (only 5 visible, older messages pushed out).
+14. **Message timing**: All messages use game time, so pausing (if implemented) would freeze expiration.
+15. **Player-tracking enemies**: Green bean casserole enemies require player reference passed through spawn chain (Game → LevelManager → spawn_enemy). Without player reference, they fall back to straight movement.
 
 ---
 

@@ -23,9 +23,9 @@ DARK_RED = (139, 0, 0)
 # Player settings
 PLAYER_WIDTH = 50
 PLAYER_HEIGHT = 40
-PLAYER_SPEED = 5
+PLAYER_SPEED = 6
 PLAYER_COLOR = GREEN
-PLAYER_SHOOT_COOLDOWN = 250  # milliseconds
+PLAYER_SHOOT_COOLDOWN = 175  # milliseconds
 
 # Projectile settings
 BULLET_WIDTH = 5
@@ -41,8 +41,8 @@ SPRITE_DIR = 'assets/sprites'
 # Enemy types configuration
 ENEMY_TYPES = {
     'gravy_boat': {
-        'width': 45,
-        'height': 45,
+        'width': 55,
+        'height': 55,
         'color': BROWN,
         'speed': 2,
         'health': 1,
@@ -50,8 +50,8 @@ ENEMY_TYPES = {
         'movement': 'straight'
     },
     'pumpkin_pie': {
-        'width': 40,
-        'height': 40,
+        'width': 60,
+        'height': 60,
         'color': ORANGE,
         'speed': 1.5,
         'health': 1,
@@ -59,8 +59,8 @@ ENEMY_TYPES = {
         'movement': 'zigzag'
     },
     'cranberry': {
-        'width': 30,
-        'height': 30,
+        'width': 40,
+        'height': 40,
         'color': DARK_RED,
         'speed': 3,
         'health': 1,
@@ -68,8 +68,8 @@ ENEMY_TYPES = {
         'movement': 'straight'
     },
     'mashed_potato': {
-        'width': 35,
-        'height': 35,
+        'width': 45,
+        'height': 45,
         'color': (210, 180, 140),
         'speed': 2,
         'health': 1,
@@ -77,8 +77,8 @@ ENEMY_TYPES = {
         'movement': 'straight'
     },
     'stuffing': {
-        'width': 40,
-        'height': 40,
+        'width': 65,
+        'height': 65,
         'color': (245, 245, 220),
         'speed': 1.5,
         'health': 2,
@@ -86,19 +86,19 @@ ENEMY_TYPES = {
         'movement': 'straight'
     },
     'green_bean_casserole': {
-        'width': 45,
-        'height': 45,
+        'width': 80,
+        'height': 80,
         'color': (100, 150, 50),
-        'speed': 1.5,
+        'speed': 1.9,
         'health': 3,
         'points': 300,
         'movement': 'track_player'
     },
     'turkey': {
-        'width': 60,
-        'height': 50,
+        'width': 70,
+        'height': 70,
         'color': (101, 67, 33),
-        'speed': 1,
+        'speed': 1.3,
         'health': 5,
         'points': 500,
         'movement': 'sine_wave'
@@ -161,28 +161,28 @@ POWERUP_SPAWN_RATE = 8000  # milliseconds between powerup spawns
 # Powerup types configuration
 POWERUP_TYPES = {
     'fire_rate': {
-        'radius': 15,
+        'radius': 25,
         'color': (0, 255, 255),  # Cyan
         'speed': 2,
         'effect_type': 'fire_rate',
-        'duration': 20000  # 20 seconds in milliseconds
+        'duration': -1  # Persistent until life loss
     },
     'extra_life': {
-        'radius': 15,
+        'radius': 25,
         'color': (255, 20, 147),  # Deep pink
         'speed': 2,
         'effect_type': 'extra_life',
         'duration': 0  # Instant effect
     },
     'speed_boost': {
-        'radius': 15,
+        'radius': 30,
         'color': (144, 238, 144),  # Light green
         'speed': 2,
         'effect_type': 'speed_boost',
-        'duration': 30000  # 30 seconds
+        'duration': -1  # Persistent until life loss
     },
     'slow_enemies': {
-        'radius': 15,
+        'radius': 20,
         'color': (173, 216, 230),  # Light blue
         'speed': 2,
         'effect_type': 'slow_enemies',

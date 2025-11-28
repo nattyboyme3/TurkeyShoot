@@ -75,7 +75,10 @@ class Player:
 
     def apply_powerup(self, effect_type, duration, current_time):
         """Apply a powerup effect to the player"""
-        if duration > 0:
+        if duration == -1:
+            # Persistent effect (lasts until life loss)
+            self.active_effects[effect_type] = -1
+        elif duration > 0:
             # Timed effect
             self.active_effects[effect_type] = current_time + duration
         # Instant effects (like extra_life) are handled in game.py
@@ -85,9 +88,9 @@ class Player:
 
     def update_effects(self, current_time):
         """Update active effects and remove expired ones. Returns list of expired effects."""
-        # Remove expired effects
+        # Remove expired effects (skip persistent effects with expiration == -1)
         expired = [effect for effect, expiration in self.active_effects.items()
-                   if current_time >= expiration]
+                   if expiration != -1 and current_time >= expiration]
         for effect in expired:
             del self.active_effects[effect]
 
@@ -107,3 +110,10 @@ class Player:
 
         if 'fire_rate' in self.active_effects:
             self.cooldown_modifier *= FIRE_RATE_MODIFIER
+
+    def clear_player_effects(self):
+        """Clear all player powerup effects (called on life loss). Returns list of cleared effects."""
+        cleared = list(self.active_effects.keys())
+        self.active_effects.clear()
+        self.update_modifiers()
+        return cleared
