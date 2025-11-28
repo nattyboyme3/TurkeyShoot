@@ -31,16 +31,17 @@ main.py
 ## State Machine (game.py:GameState)
 
 ```python
-States: MENU | PLAYING | PAUSED | GAME_OVER | HIGH_SCORES | LEVEL_TRANSITION | NAME_INPUT
+States: MENU | PLAYING | PAUSED | GAME_OVER | HIGH_SCORES | NAME_INPUT
 
 Transitions:
 MENU → {PLAYING (difficulty selected), HIGH_SCORES, EXIT}
-PLAYING → {GAME_OVER (lives=0), LEVEL_TRANSITION (level complete), MENU (ESC)}
-LEVEL_TRANSITION → PLAYING (after 2s timer)
+PLAYING → {GAME_OVER (lives=0), MENU (ESC)}
 GAME_OVER → {NAME_INPUT (is_high_score), MENU}
 NAME_INPUT → GAME_OVER (after name submitted)
 HIGH_SCORES → MENU
 ```
+
+**Note**: Level progression occurs immediately within PLAYING state with a notification message (no separate transition state).
 
 **State Persistence**: `self.state` (GameState enum), transitions handled in `handle_events()` and `update()`. No state history maintained.
 
@@ -292,7 +293,56 @@ advance_level():
     start_level()  # Recalculates enemies_in_level, resets spawn tracking
 ```
 
-### 8. UI System (ui.py)
+### 8. Message Notification System (ui.py:MessageQueue)
+
+**Class**: `MessageQueue`
+
+**State**:
+- Messages list: `messages` - List of (text, color, expiration_time) tuples
+- Auto-expiring: Messages removed after duration expires (default 3000ms)
+- Max visible: 5 messages shown at once
+
+**API**:
+```python
+add_message(text, color, current_time, duration=MESSAGE_DURATION)
+  # Adds new message with expiration timestamp
+  # Automatically trims to MESSAGE_MAX_VISIBLE
+
+update(current_time)
+  # Removes expired messages
+  # Called every frame in update_playing()
+
+get_visible_messages() -> list[(text, color)]
+  # Returns list of non-expired messages for rendering
+```
+
+**Message Types**:
+```python
+# Powerup collection (GREEN)
+"Rapid Fire!", "Extra Life!", "Speed Boost!", "Slow Enemies!"
+
+# Powerup expiration (YELLOW)
+"Rapid Fire! ended", "Speed Boost! ended", "Slow Enemies! ended"
+
+# Enemy kills (WHITE)
+"Killed Turkey", "Killed Cranberry", etc.
+
+# Level progression (BLUE, 4s duration)
+"Level 2!", "Level 3!", etc.
+```
+
+**Display**:
+- Location: Bottom-right corner (x: SCREEN_WIDTH - 250, y: SCREEN_HEIGHT - 150)
+- Semi-transparent black background (alpha 180)
+- White border
+- Stack vertically, newest at bottom
+- Small font (20px)
+
+**Triggered From**:
+- `game.py:apply_powerup_effect()` - powerup collection
+- `game.py:update_playing()` - effect expirations, enemy kills, level advancement
+
+### 9. UI System (ui.py)
 
 **Class**: `UI`
 
@@ -331,15 +381,18 @@ class Button:
    - Top 10 per column, format: "rank. score"
    - Button: back
 
-5. **Level Transition** (`draw_level_transition(level)`):
-   - Overlay (BLACK, alpha=180)
-   - Center text: "LEVEL {level}" (YELLOW, LARGE)
-
-6. **Name Input** (`draw_name_input(current_name)`):
+5. **Name Input** (`draw_name_input(current_name)`):
    - "NEW HIGH SCORE!" header
    - Input box (300×50 px, centered)
    - Current name displayed, max 15 chars
    - Instruction: "Press ENTER to submit"
+
+6. **Message Notifications** (`draw_messages(message_queue)`):
+   - Bottom-right corner box
+   - Semi-transparent background (BLACK, alpha=180)
+   - White border
+   - Messages stacked vertically (newest at bottom)
+   - Max 5 messages visible
 
 **Rendering**: All text rendered with `font.render(text, True, color)`, blitted to screen at calculated positions (center=True uses `get_rect(center=(x,y))`).
 
@@ -358,27 +411,21 @@ while running:
 
 **PLAYING State** (`update_playing()`):
 ```python
-1. Update player effects (remove expired powerup effects)
-2. Update enemy speed modifier (remove if expired)
-3. Process continuous input (LEFT/RIGHT/A/D keys, SPACE for shooting)
-4. Update player position (apply speed_modifier)
-5. Update all bullets (move up, remove if off-screen)
-6. Spawn powerups (time-based, every POWERUP_SPAWN_RATE ms)
-7. Update all powerups (move down, remove if off-screen)
-8. Check powerup-player collision → apply_powerup_effect()
-9. Spawn enemies (if can_spawn_enemy() and level_manager allows, apply enemy_speed_modifier)
-10. Update all enemies (move based on pattern, remove if off-screen)
-11. Check bullet-enemy collisions → add score
-12. Check player-enemy collisions → lose_life()
-13. Check enemies reached bottom → lose_life()
-14. Check level completion → start_level_transition()
-```
-
-**LEVEL_TRANSITION State**:
-```python
-if current_time - level_transition_time >= 2000ms:
-    level_manager.advance_level()
-    state = PLAYING
+1. Update message queue (remove expired messages)
+2. Update player effects (remove expired, trigger expiration messages, returns list)
+3. Update enemy speed modifier (remove if expired, trigger expiration message)
+4. Process continuous input (LEFT/RIGHT/A/D keys, SPACE for shooting)
+5. Update player position (apply speed_modifier)
+6. Update all bullets (move up, remove if off-screen)
+7. Spawn powerups (time-based, every POWERUP_SPAWN_RATE ms)
+8. Update all powerups (move down, remove if off-screen)
+9. Check powerup-player collision → apply_powerup_effect() + add collection message
+10. Spawn enemies (if can_spawn_enemy() and level_manager allows, apply enemy_speed_modifier)
+11. Update all enemies (move based on pattern, remove if off-screen)
+12. Check bullet-enemy collisions → add score + add kill messages
+13. Check player-enemy collisions → lose_life()
+14. Check enemies reached bottom → lose_life()
+15. Check level completion → advance_level() immediately + add level message (no state change)
 ```
 
 ### Life Management
@@ -402,12 +449,27 @@ game_over():
 self.bullets: list[Bullet]           # Active projectiles
 self.enemies: list[Enemy]            # Active enemies
 self.powerups: list[PowerUp]         # Active powerups
+self.message_queue: MessageQueue     # Notification messages
 ```
 
 **List Management**:
 - Append on spawn/shoot
 - Remove when `not obj.is_active()` (checked every frame)
 - Iterate with `for obj in list[:]` (slice copy) when removing during iteration
+
+### Message Tracking
+
+**Message Queue** (ui.py:MessageQueue):
+```python
+self.messages: list[(text, color, expiration_time)]  # Timed message queue
+```
+
+**Message Flow**:
+1. Event occurs (powerup collected, effect expires, enemy killed, level up)
+2. Game logic calls `message_queue.add_message(text, color, current_time, duration)`
+3. Message added with expiration timestamp
+4. `message_queue.update(current_time)` removes expired messages every frame
+5. `ui.draw_messages(message_queue)` renders visible messages in bottom-right corner
 
 ### Effect Tracking
 
@@ -474,13 +536,16 @@ handle_events():
 - Player shoot: 250ms (`last_shot` + `PLAYER_SHOOT_COOLDOWN * cooldown_modifier`)
 - Enemy spawn: Variable per difficulty (`last_spawn_time` + `spawn_rate`)
 - Powerup spawn: 8000ms (`last_powerup_spawn` + `POWERUP_SPAWN_RATE`)
-- Level transition: 2000ms (`level_transition_time` + 2000)
 
 **Effect Durations**:
 - Fire rate boost: 15000ms (15 seconds)
 - Speed boost: 15000ms (15 seconds)
 - Slow enemies: 15000ms (15 seconds)
 - Extra life: Instant (0ms duration)
+
+**Message Durations**:
+- Default: 3000ms (3 seconds)
+- Level up: 4000ms (4 seconds)
 
 ## Rendering Pipeline
 
@@ -492,8 +557,9 @@ handle_events():
 4. All powerups                          # Moving downward (circles)
 5. All enemies                           # Moving downward
 6. HUD (score, lives, level)             # Top overlay
-7. State-specific overlays (if any)      # Menu, game over, etc.
-8. pygame.display.flip()                 # Swap buffers
+7. Message notifications                 # Bottom-right corner
+8. State-specific overlays (if any)      # Menu, game over, etc.
+9. pygame.display.flip()                 # Swap buffers
 ```
 
 **Coordinate System**: Origin (0,0) at top-left, +x right, +y down
@@ -557,7 +623,8 @@ with open(HIGH_SCORE_FILE, 'w') as f:
 - Powerup spawning: O(1) per frame (8-second intervals)
 - List cleanup: O(n) per frame (bullets + enemies + powerups)
 - Effect expiration: O(e) where e=active player effects (max 2: fire_rate + speed_boost)
-- Rendering: O(n) draw calls per frame
+- Message cleanup: O(m) where m=messages (max 5)
+- Rendering: O(n+m) draw calls per frame
 
 **Memory**: Minimal. Max ~50 enemies + ~2 powerups on screen simultaneously (hard mode, high levels). No texture loading (all geometric primitives).
 
@@ -730,7 +797,7 @@ self.clock.tick(10)  # 10 FPS instead of 60
 
 ## Non-Obvious Behaviors
 
-1. **Level transition covers enemy movement**: Enemies continue updating during LEVEL_TRANSITION state (still on screen, not cleared).
+1. **Level progression is immediate**: No pause between levels - enemies clear, level advances, and a message appears, but gameplay continues uninterrupted.
 2. **Lives lost per frame**: Multiple enemies hitting player in same frame = multiple life losses (rare but possible).
 3. **Boss spawn timing**: Boss always first enemy on boss level, then normal enemies fill remaining count.
 4. **Zigzag boundary**: Enemies reverse direction on wall hit, not at screen center. Can cause clustering.
@@ -740,6 +807,8 @@ self.clock.tick(10)  # 10 FPS instead of 60
 8. **Slow enemies affects existing**: When slow_enemies powerup collected, existing enemies immediately slowed (not just new spawns).
 9. **Effect modifiers multiplicative**: Multiple effects combine multiplicatively (e.g., 1.1 * 1.1 = 1.21x if hypothetically stacked).
 10. **Powerup collision uses bounding box**: Circular powerups use rectangular Rect for collision (slightly larger hit area).
+11. **Message flooding**: Rapidly killing many enemies can fill message queue (only 5 visible, older messages pushed out).
+12. **Message timing**: All messages use game time, so pausing (if implemented) would freeze expiration.
 
 ---
 
