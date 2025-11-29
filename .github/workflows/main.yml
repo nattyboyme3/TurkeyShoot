@@ -36,10 +36,9 @@ jobs:
         run: |
           # clean previous PyInstaller outputs
           Remove-Item -Recurse -Force -ErrorAction SilentlyContinue build,dist,__pycache__,*.spec
-
           # Use --paths . so PyInstaller can find other .py modules in repo root.
           # Add the entire sprites folder so all PNGs are included. On Windows the add-data separator is ';'
-          pyinstaller --onefile --windowed --name TurkeyShoot --paths "." --add-data "assets/sprites:assets/sprites" main.py
+          pyinstaller --onefile --windowed --name TurkeyShoot --paths "." --add-data "assets/sprites;assets/sprites" main.py
 
       - name: Package output
         shell: pwsh
