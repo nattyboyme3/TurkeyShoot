@@ -36,7 +36,7 @@ jobs:
 
           # Use --paths . so PyInstaller can find other .py modules in repo root.
           # Add the entire sprites folder so all PNGs are included. On Windows the add-data separator is ';'
-          pyinstaller --onefile --windowed --name MyGame --paths "." --add-data "assets/sprites:assets/sprites" main.py
+          pyinstaller --onefile --windowed --name TurkeyShoot --paths "." --add-data "assets/sprites:assets/sprites" main.py
 
       - name: Package output
         shell: pwsh
@@ -44,7 +44,7 @@ jobs:
           $dist = Join-Path $PWD "dist"
           if (-Not (Test-Path $dist)) { Write-Error "dist folder not found — build failed"; exit 1 }
           # If --onefile was used, there's a single exe in dist. Zip entire dist to be safe.
-          $zip = Join-Path $PWD "MyGame-windows.zip"
+          $zip = Join-Path $PWD "TurkeyShoot-windows.zip"
           if (Test-Path $zip) { Remove-Item $zip }
           Compress-Archive -Path (Join-Path $dist "*") -DestinationPath $zip
           Write-Output "Created $zip"
@@ -52,8 +52,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MyGame-windows
-          path: MyGame-windows.zip
+          name: TurkeyShoot-windows
+          path: TurkeyShoot-windows.zip
 
       - name: Create GitHub release (timestamp tag)
         id: create_release
