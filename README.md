@@ -2,6 +2,8 @@
 
 A quirky 2D Thanksgiving-themed shooting game built with Python and Pygame.
 
+![Screenshot of TurkeyShoot](images/screenshot.png)
+
 ## Features
 
 - **Three Difficulty Levels**: Easy, Medium, and Hard

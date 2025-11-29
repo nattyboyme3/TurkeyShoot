@@ -1,0 +1,91 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          if (Test-Path requirements.txt) {
+            pip install -r requirements.txt
+          } else {
+            pip install pygame
+          }
+          pip install pyinstaller
+
+      - name: Build exe with PyInstaller (include all ./assets/sprites/*.png)
+        shell: pwsh
+        run: |
+          # clean previous PyInstaller outputs
+          Remove-Item -Recurse -Force -ErrorAction SilentlyContinue build,dist,__pycache__,*.spec
+
+          # Use --paths . so PyInstaller can find other .py modules in repo root.
+          # Add the entire sprites folder so all PNGs are included. On Windows the add-data separator is ';'
+          pyinstaller --onefile --windowed --name TurkeyShoot --paths "." --add-data "assets/sprites:assets/sprites" main.py
+
+      - name: Package output
+        shell: pwsh
+        run: |
+          $dist = Join-Path $PWD "dist"
+          if (-Not (Test-Path $dist)) { Write-Error "dist folder not found — build failed"; exit 1 }
+          # If --onefile was used, there's a single exe in dist. Zip entire dist to be safe.
+          $zip = Join-Path $PWD "TurkeyShoot-windows.zip"
+          if (Test-Path $zip) { Remove-Item $zip }
+          Compress-Archive -Path (Join-Path $dist "*") -DestinationPath $zip
+          Write-Output "Created $zip"
+      - name: Package output (zip)
+        id: package
+        shell: pwsh
+        run: |
+          $dist = Join-Path $PWD "dist"
+          if (-Not (Test-Path $dist)) { Write-Error "dist folder not found — build failed"; exit 1 }
+          $zipName = "TurkeyShoot-windows-${{ steps.ts.outputs.timestamp }}.zip"
+          if (Test-Path $zipName) { Remove-Item $zipName }
+          Compress-Archive -Path (Join-Path $dist "*") -DestinationPath $zipName
+          echo "zip=$zipName" >> $env:GITHUB_OUTPUT
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TurkeyShoot-windows
+          path: TurkeyShoot-windows.zip
+
+      - name: Create GitHub release (timestamp tag)
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.ts.outputs.timestamp }}
+          release_name: v${{ steps.ts.outputs.timestamp }}
+          body: "Auto-created release for build v${{ steps.ts.outputs.timestamp }}."
+          draft: false
+          prerelease: false
+
+      - name: Upload zip to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.package.outputs.zip }}
+          asset_name: ${{ steps.package.outputs.zip }}
+          asset_content_type: application/zip
