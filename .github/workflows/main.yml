@@ -51,6 +51,16 @@ jobs:
           if (Test-Path $zip) { Remove-Item $zip }
           Compress-Archive -Path (Join-Path $dist "*") -DestinationPath $zip
           Write-Output "Created $zip"
+      - name: Package output (zip)
+        id: package
+        shell: pwsh
+        run: |
+          $dist = Join-Path $PWD "dist"
+          if (-Not (Test-Path $dist)) { Write-Error "dist folder not found — build failed"; exit 1 }
+          $zipName = "TurkeyShoot-windows-${{ steps.ts.outputs.timestamp }}.zip"
+          if (Test-Path $zipName) { Remove-Item $zipName }
+          Compress-Archive -Path (Join-Path $dist "*") -DestinationPath $zipName
+          echo "zip=$zipName" >> $env:GITHUB_OUTPUT
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
