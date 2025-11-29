@@ -5,8 +5,9 @@ import pygame
 import random
 from constants import (
     POWERUP_TYPES, SCREEN_HEIGHT, SCREEN_WIDTH,
-    POWERUP_SPAWN_MARGIN, SPRITE_DIR, WHITE
+    POWERUP_SPAWN_MARGIN, SPRITE_DIR, WHITE, ASSETS_DIR
 )
+from utils import resource_path
 
 
 class PowerUp:
@@ -36,9 +37,9 @@ class PowerUp:
         if cache_key in PowerUp._sprite_cache:
             self.sprite = PowerUp._sprite_cache[cache_key]
         else:
-            sprite_path = f"{SPRITE_DIR}/{powerup_type}.png"
+            sprite_filename = f"{powerup_type}.png"
             try:
-                original = pygame.image.load(sprite_path)
+                original = pygame.image.load(resource_path(ASSETS_DIR, SPRITE_DIR, sprite_filename))
                 scaled = pygame.transform.scale(original, (self.sprite_size, self.sprite_size))
                 PowerUp._sprite_cache[cache_key] = scaled
                 self.sprite = scaled

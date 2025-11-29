@@ -2,24 +2,133 @@
   "easy": [
     {
       "name": "NSB",
+      "score": 21550,
+      "level": 5,
+      "date": "2025-11-28 19:14"
+    },
+    {
+      "name": "NSB",
+      "score": 15500,
+      "level": 8,
+      "date": "2025-11-28 17:43"
+    },
+    {
+      "name": "NSB",
+      "score": 14475,
+      "level": 8,
+      "date": "2025-11-28 18:04"
+    },
+    {
+      "name": "NSB",
       "score": 13475,
       "level": 11,
       "date": "2025-11-27 12:09"
     },
     {
-      "name": "NSB",
-      "score": 1800,
-      "level": 3,
-      "date": "2025-11-27 11:18"
+      "name": "Samuel",
+      "score": 8275,
+      "level": 6,
+      "date": "2025-11-28 17:51"
+    },
+    {
+      "name": "Samuel",
+      "score": 6300,
+      "level": 5,
+      "date": "2025-11-28 17:59"
+    },
+    {
+      "name": "Samuel",
+      "score": 6100,
+      "level": 5,
+      "date": "2025-11-28 18:01"
+    },
+    {
+      "name": "llily",
+      "score": 5450,
+      "level": 5,
+      "date": "2025-11-28 17:47"
+    },
+    {
+      "name": "lily",
+      "score": 5450,
+      "level": 4,
+      "date": "2025-11-28 17:55"
+    },
+    {
+      "name": "Lily",
+      "score": 5050,
+      "level": 5,
+      "date": "2025-11-28 17:57"
     }
   ],
   "medium": [
     {
       "name": "NSB",
+      "score": 7925,
+      "level": 7,
+      "date": "2025-11-28 13:46"
+    },
+    {
+      "name": "NSB",
+      "score": 5800,
+      "level": 5,
+      "date": "2025-11-28 17:37"
+    },
+    {
+      "name": "NSB",
+      "score": 5400,
+      "level": 5,
+      "date": "2025-11-28 17:14"
+    },
+    {
+      "name": "NSB",
+      "score": 3500,
+      "level": 4,
+      "date": "2025-11-28 18:08"
+    },
+    {
+      "name": "NSB",
+      "score": 3250,
+      "level": 2,
+      "date": "2025-11-28 13:06"
+    },
+    {
+      "name": "NSB",
       "score": 750,
       "level": 2,
       "date": "2025-11-27 14:50"
+    },
+    {
+      "name": "Samuel",
+      "score": 400,
+      "level": 1,
+      "date": "2025-11-28 17:53"
+    },
+    {
+      "name": "NSB",
+      "score": 50,
+      "level": 1,
+      "date": "2025-11-28 13:06"
     }
   ],
-  "hard": []
+  "hard": [
+    {
+      "name": "NSB",
+      "score": 1800,
+      "level": 2,
+      "date": "2025-11-28 18:07"
+    },
+    {
+      "name": "NSB",
+      "score": 950,
+      "level": 2,
+      "date": "2025-11-28 18:07"
+    },
+    {
+      "name": " NSB",
+      "score": 800,
+      "level": 1,
+      "date": "2025-11-28 12:05"
+    }
+  ]
 }

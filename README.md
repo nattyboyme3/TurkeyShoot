@@ -48,47 +48,22 @@ python main.py
 - **Hard**: 2 lives, fast enemies, quick spawns
 
 ### Enemy Types
-- **Turkey** (100 pts): Standard enemy, straight movement
+
 - **Cranberry Sauce** (50 pts): Fast but predictable
 - **Stuffing** (75 pts): Moderate speed, appears in groups
-- **Pumpkin Pie** (150 pts): Zigzag movement pattern
-- **Mashed Potato** (200 pts): Tanky, requires 2 hits
-- **Gravy Boat** (500 pts): Boss enemy, sine wave movement, 5 hits
+- **Pumpkin Pie** (150 pts): Zigzag movement pattern, requires 2 hits
+- **Mashed Potato** (200 pts): Tanky, requires 4 hits
+- **Gravy Boat** (600 pts): Tricky, sine wave movement, 5 hits
+- **Turkey** (100 pts): Boss enemy, sine wave movement, 15 hits
 
 ## Level Progression
 - Each level spawns 20% more enemies than the previous
 - Speed increases by 10% every 3 levels
-- New enemy types unlock at levels 2, 4, and 6
+- New enemy types unlock at levels 2, 4, 6, and 8
 - Boss levels occur every 5 levels
 
 ## High Scores
 High scores are automatically saved to `data/highscores.json` and persist between game sessions. Each difficulty level maintains its own leaderboard of the top 10 scores.
-
-## Project Structure
-```
-turkey_shoot/
-├── main.py              # Game entry point
-├── game.py              # Main game loop and state management
-├── player.py            # Player class
-├── enemies.py           # Enemy classes and behaviors
-├── projectiles.py       # Bullet system
-├── collision.py         # Collision detection
-├── scoring.py           # Score management
-├── levels.py            # Level progression
-├── ui.py                # UI and menus
-├── constants.py         # Game configuration
-├── data/
-│   └── highscores.json  # Persistent high scores
-└── assets/              # Future: sprites and sounds
-```
-
-## Development
-This game uses simple geometric shapes for graphics. Future enhancements could include:
-- Custom sprites for enemies and player
-- Sound effects and background music
-- Power-ups (rapid fire, multi-shot, shields)
-- More enemy types and patterns
-- Particle effects
 
 ## License
 Created for educational and entertainment purposes.

@@ -36,7 +36,8 @@ BULLET_COLOR = YELLOW
 # Enemy settings
 ENEMY_BASE_SPEED = 2
 ENEMY_SPAWN_MARGIN = 50
-SPRITE_DIR = 'assets/sprites'
+SPRITE_DIR = 'sprites'
+ASSETS_DIR = 'assets'
 
 # Enemy types configuration
 ENEMY_TYPES = {
@@ -46,7 +47,7 @@ ENEMY_TYPES = {
         'color': BROWN,
         'speed': 2,
         'health': 4,
-        'points': 100,
+        'points': 600,
         'movement': 'straight'
     },
     'pumpkin_pie': {
@@ -55,7 +56,7 @@ ENEMY_TYPES = {
         'color': ORANGE,
         'speed': 2,
         'health': 2,
-        'points': 150,
+        'points': 450,
         'movement': 'zigzag'
     },
     'cranberry': {
@@ -64,7 +65,7 @@ ENEMY_TYPES = {
         'color': DARK_RED,
         'speed': 2.5,
         'health': 1,
-        'points': 50,
+        'points': 250,
         'movement': 'straight'
     },
     'mashed_potato': {
@@ -73,7 +74,7 @@ ENEMY_TYPES = {
         'color': (210, 180, 140),
         'speed': 2,
         'health': 3,
-        'points': 75,
+        'points': 600,
         'movement': 'straight'
     },
     'stuffing': {
@@ -82,7 +83,7 @@ ENEMY_TYPES = {
         'color': (245, 245, 220),
         'speed': 1.5,
         'health': 5,
-        'points': 200,
+        'points': 750,
         'movement': 'straight'
     },
     'green_bean_casserole': {
@@ -91,7 +92,7 @@ ENEMY_TYPES = {
         'color': (100, 150, 50),
         'speed': 1.6,
         'health': 20,
-        'points': 300,
+        'points': 950,
         'movement': 'track_player'
     },
     'turkey': {
@@ -100,7 +101,7 @@ ENEMY_TYPES = {
         'color': (101, 67, 33),
         'speed': 1.3,
         'health': 10,
-        'points': 500,
+        'points': 1500,
         'movement': 'sine_wave'
     }
 }

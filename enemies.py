@@ -6,9 +6,9 @@ import math
 import random
 from constants import (
     ENEMY_TYPES, SCREEN_WIDTH, SCREEN_HEIGHT,
-    ENEMY_SPAWN_MARGIN, WHITE, SPRITE_DIR
+    ENEMY_SPAWN_MARGIN, WHITE, SPRITE_DIR, ASSETS_DIR
 )
-
+from utils import resource_path
 
 class Enemy:
     """Base enemy class"""
@@ -41,9 +41,9 @@ class Enemy:
         if cache_key in Enemy._sprite_cache:
             self.sprite = Enemy._sprite_cache[cache_key]
         else:
-            sprite_path = f"{SPRITE_DIR}/{enemy_type}.png"
+            sprite_filename = f"{enemy_type}.png"
             try:
-                original = pygame.image.load(sprite_path)
+                original = pygame.image.load(resource_path(ASSETS_DIR, SPRITE_DIR, sprite_filename))
                 scaled = pygame.transform.scale(original, (self.width, self.height))
                 Enemy._sprite_cache[cache_key] = scaled
                 self.sprite = scaled

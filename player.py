@@ -5,8 +5,9 @@ import pygame
 from constants import (
     PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED, PLAYER_COLOR,
     SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SHOOT_COOLDOWN,
-    FIRE_RATE_MODIFIER, SPEED_BOOST_MODIFIER, SPRITE_DIR
+    FIRE_RATE_MODIFIER, SPEED_BOOST_MODIFIER, SPRITE_DIR, ASSETS_DIR
 )
+from utils import resource_path
 
 
 class Player:
@@ -32,9 +33,9 @@ class Player:
         if cache_key in Player._sprite_cache:
             self.sprite = Player._sprite_cache[cache_key]
         else:
-            sprite_path = f"{SPRITE_DIR}/player.png"
+            sprite_filename = "player.png"
             try:
-                original = pygame.image.load(sprite_path)
+                original = pygame.image.load(resource_path(ASSETS_DIR, SPRITE_DIR, sprite_filename))
                 scaled = pygame.transform.scale(original, (self.width, self.height))
                 Player._sprite_cache[cache_key] = scaled
                 self.sprite = scaled
