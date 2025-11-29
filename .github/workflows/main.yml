@@ -31,6 +31,13 @@ jobs:
           }
           pip install pyinstaller
 
+      - name: Set timestamp
+        id: ts
+        shell: pwsh
+        run: |
+          $ts = Get-Date -Format "yyyyMMddHHmmss"
+          echo "timestamp=$ts" >> $env:GITHUB_OUTPUT
+
       - name: Build exe with PyInstaller (include all ./assets/sprites/*.png)
         shell: pwsh
         run: |
